@@ -22,7 +22,7 @@ import {
 import {
     convertAnthropicToGoogle,
     convertGoogleToAnthropic
-} from './format-converter.js';
+} from './format/index.js';
 import { formatDuration, sleep } from './utils/helpers.js';
 import { isRateLimitError, isAuthError } from './errors.js';
 
