@@ -157,3 +157,75 @@
 .standard-table tbody tr {
     @apply hover:bg-white/5 transition-colors border-b border-space-border/30 last:border-0;
 }
+
+/* Custom Range Slider */
+.custom-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--color-space-800);
+    border-radius: 999px;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    background-image: linear-gradient(to right, var(--range-color) 0%, var(--range-color) 100%);
+    background-repeat: no-repeat;
+    background-size: 0% 100%;
+}
+
+.custom-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 0 10px var(--range-color-glow);
+    cursor: pointer;
+    margin-top: -6px;
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.custom-range::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px var(--range-color-glow);
+}
+
+.custom-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 0 10px var(--range-color-glow);
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.custom-range::-moz-range-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px var(--range-color-glow);
+}
+
+/* Color Variants */
+.custom-range-purple {
+    --range-color: var(--color-neon-purple);
+    --range-color-glow: rgba(168, 85, 247, 0.5);
+}
+.custom-range-green {
+    --range-color: var(--color-neon-green);
+    --range-color-glow: rgba(34, 197, 94, 0.5);
+}
+.custom-range-cyan {
+    --range-color: var(--color-neon-cyan);
+    --range-color-glow: rgba(6, 182, 212, 0.5);
+}
+.custom-range-yellow {
+    --range-color: var(--color-neon-yellow);
+    --range-color-glow: rgba(234, 179, 8, 0.5);
+}
+.custom-range-accent {
+    --range-color: var(--color-neon-cyan); /* Default accent to cyan if needed, or match DaisyUI */
+    --range-color-glow: rgba(6, 182, 212, 0.5);
+}

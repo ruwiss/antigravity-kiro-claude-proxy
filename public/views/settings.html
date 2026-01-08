@@ -1,31 +1,5 @@
 <div x-data="{
-    activeTab: 'ui',
-    // Helper function to update model config with authentication
-    async updateModelConfig(modelId, configUpdates) {
-        const store = Alpine.store('global');
-        try {
-            const { response, newPassword } = await window.utils.request('/api/models/config', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ modelId, config: configUpdates })
-            }, store.webuiPassword);
-
-            if (newPassword) store.webuiPassword = newPassword;
-
-            if (!response.ok) {
-                throw new Error('Failed to update model config');
-            }
-
-            // Optimistic update
-            Alpine.store('data').modelConfig[modelId] = {
-                ...Alpine.store('data').modelConfig[modelId],
-                ...configUpdates
-            };
-            Alpine.store('data').computeQuotaRows();
-        } catch (e) {
-            store.showToast('Failed to update model config: ' + e.message, 'error');
-        }
-    }
+    activeTab: 'ui'
 }" class="view-container">
     <!-- Header & Tabs -->
     <div class="glass-panel rounded-xl border border-space-border flex flex-col overflow-hidden">
@@ -64,7 +38,7 @@
             <button @click="activeTab = 'server'"
                 class="pb-3 border-b-2 transition-colors font-medium text-sm flex items-center gap-2 whitespace-nowrap"
                 :class="activeTab === 'server' ? 'border-neon-purple text-white' : 'border-transparent text-gray-500 hover:text-gray-300'">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" /></svg>
                 <span x-text="$store.global.t('tabServer')">Server</span>
             </button>
         </div>
@@ -101,8 +75,9 @@
                         <span class="label-text-alt font-mono text-neon-purple"
                             x-text="$store.settings.refreshInterval + 's'"></span>
                     </label>
-                    <input type="range" min="10" max="300" class="range range-xs range-primary"
+                    <input type="range" min="10" max="300" class="custom-range custom-range-purple"
                         x-model="$store.settings.refreshInterval"
+                        :style="`background-size: ${($store.settings.refreshInterval - 10) / 2.9}% 100%`"
                         @change="$store.settings.saveSettings(true)">
                     <div class="w-full flex justify-between text-xs px-2 mt-2 text-gray-600 font-mono">
                         <span>10s</span>
@@ -117,8 +92,9 @@
                         <span class="label-text-alt font-mono text-neon-purple"
                             x-text="$store.settings.logLimit + ' ' + $store.global.t('lines')"></span>
                     </label>
-                    <input type="range" min="500" max="5000" step="500" class="range range-xs range-secondary"
+                    <input type="range" min="500" max="5000" step="500" class="custom-range custom-range-purple"
                         x-model="$store.settings.logLimit"
+                        :style="`background-size: ${($store.settings.logLimit - 500) / 45}% 100%`"
                         @change="$store.settings.saveSettings(true)">
                     <div class="w-full flex justify-between text-xs px-2 mt-2 text-gray-600 font-mono">
                         <span>500</span>
@@ -131,37 +107,43 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div
-                    class="form-control bg-space-900/50 p-4 rounded-lg border transition-all duration-300 hover:border-space-border cursor-pointer group"
-                    :class="$store.settings.showExhausted ? 'border-neon-purple/50 bg-neon-purple/5 shadow-[0_0_15px_rgba(168,85,247,0.1)]' : 'border-space-border/50'"
-                    @click="$store.settings.showExhausted = !$store.settings.showExhausted; $store.settings.saveSettings(true)">
-                    <label class="label cursor-pointer pointer-events-none"> <!-- pointer-events-none to prevent double toggle -->
+                    class="form-control bg-space-900/50 p-4 rounded-lg border transition-all duration-300 hover:border-neon-purple/50"
+                    :class="$store.settings.showExhausted ? 'border-neon-purple/50 bg-neon-purple/5 shadow-[0_0_15px_rgba(168,85,247,0.1)]' : 'border-space-border/50'">
+                    <div class="flex items-center justify-between">
                         <div class="flex flex-col gap-1">
                             <span class="label-text font-medium transition-colors"
                                 :class="$store.settings.showExhausted ? 'text-neon-purple' : 'text-gray-300'"
                                 x-text="$store.global.t('showExhausted')">Show Exhausted Models</span>
                             <span class="text-xs text-gray-500" x-text="$store.global.t('showExhaustedDesc')">Display models even if they have 0% remaining quota.</span>
                         </div>
-                        <input type="checkbox" class="toggle toggle-primary" x-model="$store.settings.showExhausted">
-                    </label>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer"
+                                :checked="$store.settings.showExhausted === true"
+                                @change="$store.settings.showExhausted = $event.target.checked; $store.settings.saveSettings(true)">
+                            <div class="w-9 h-5 bg-space-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-600 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neon-purple peer-checked:after:bg-white"></div>
+                        </label>
+                    </div>
                 </div>
 
                 <div
-                    class="form-control bg-space-900/50 p-4 rounded-lg border transition-all duration-300 hover:border-space-border cursor-pointer group"
-                    :class="$store.settings.compact ? 'border-neon-green/50 bg-neon-green/5 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'border-space-border/50'"
-                    @click="$store.settings.compact = !$store.settings.compact; $store.settings.saveSettings(true)">
-                    <label class="label cursor-pointer pointer-events-none">
+                    class="form-control bg-space-900/50 p-4 rounded-lg border transition-all duration-300 hover:border-neon-green/50"
+                    :class="$store.settings.compact ? 'border-neon-green/50 bg-neon-green/5 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'border-space-border/50'">
+                    <div class="flex items-center justify-between">
                         <div class="flex flex-col gap-1">
                             <span class="label-text font-medium transition-colors"
                                 :class="$store.settings.compact ? 'text-neon-green' : 'text-gray-300'"
                                 x-text="$store.global.t('compactMode')">Compact Mode</span>
                             <span class="text-xs text-gray-500" x-text="$store.global.t('compactModeDesc')">Reduce padding in tables for higher information density.</span>
                         </div>
-                        <input type="checkbox" class="toggle toggle-secondary" x-model="$store.settings.compact">
-                    </label>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer"
+                                :checked="$store.settings.compact === true"
+                                @change="$store.settings.compact = $event.target.checked; $store.settings.saveSettings(true)">
+                            <div class="w-9 h-5 bg-space-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-600 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neon-green peer-checked:after:bg-white"></div>
+                        </label>
+                    </div>
                 </div>
             </div>
-
-            <!-- Save button removed (Auto-save enabled) -->
         </div>
 
         <!-- Tab 2: Claude CLI Configuration -->
@@ -363,14 +345,17 @@
             </div>
         </div>
 
-        <!-- Tab 2.5: Models Configuration -->
-        <div x-show="activeTab === 'models'" class="space-y-6 max-w-3xl animate-fade-in">
+        <!-- Tab 3: Models Configuration -->
+        <div x-show="activeTab === 'models'" x-data="window.Components.modelManager()" class="space-y-6 max-w-3xl animate-fade-in">
             <div class="flex items-center justify-between">
                 <div class="text-sm text-gray-400" x-text="$store.global.t('modelsDesc')">Manage visibility and ordering of models in the dashboard.</div>
-                <div class="form-control">
-                    <label class="label cursor-pointer gap-2">
-                        <span class="label-text text-xs text-gray-500" x-text="$store.global.t('showHidden')">Show Hidden Models</span>
-                        <input type="checkbox" class="toggle toggle-xs toggle-primary" x-model="$store.settings.showHiddenModels" @change="$store.settings.saveSettings(true)">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500" x-text="$store.global.t('showHidden')">Show Hidden Models</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" class="sr-only peer"
+                            :checked="$store.settings.showHiddenModels === true"
+                            @change="$store.settings.showHiddenModels = $event.target.checked; $store.settings.saveSettings(true)">
+                        <div class="w-8 h-[18px] bg-space-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-600 after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-neon-purple peer-checked:after:bg-white"></div>
                     </label>
                 </div>
             </div>
@@ -382,7 +367,7 @@
                         <tr>
                             <th class="pl-4" x-text="$store.global.t('modelId')">Model ID</th>
                             <th x-text="$store.global.t('alias')">Alias</th>
-                            <th>Mapping (Target Model ID)</th>
+                            <th x-text="$store.global.t('modelMapping')">Mapping (Target Model ID)</th>
                             <th class="text-right pr-4" x-text="$store.global.t('actions')">Actions</th>
                         </tr>
                     </thead>
@@ -394,12 +379,10 @@
                                     isEditingMapping: false,
                                     newAlias: '',
                                     newMapping: '',
-                                    // Use getters for reactivity - accessing store directly ensures updates are reflected immediately
                                     get config() { return $store.data.modelConfig[modelId] || {} },
                                     get isPinned() { return !!this.config.pinned },
                                     get isHidden() {
                                         if (this.config.hidden !== undefined) return this.config.hidden;
-                                        // Smart default: unknown models are hidden by default
                                         const family = $store.data.getModelFamily(modelId);
                                         return (family === 'other' || family === 'unknown');
                                     }
@@ -415,17 +398,10 @@
                                     <div x-show="isEditingAlias" class="flex items-center gap-1">
                                         <input type="text" x-model="newAlias"
                                             class="input input-xs bg-space-800 border-space-border text-white focus:outline-none focus:border-neon-purple w-24"
-                                            @keydown.enter="
-                                                await updateModelConfig(modelId, { alias: newAlias });
-                                                isEditingAlias = false;
-                                            "
-                                            @keydown.escape="isEditingAlias = false"
-                                        >
-                                        <button class="btn btn-xs btn-ghost btn-square text-green-500" @click="
-                                            await updateModelConfig(modelId, { alias: newAlias });
-                                            isEditingAlias = false;
-                                        "><svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></button>
-                                        <button class="btn btn-xs btn-ghost btn-square text-gray-500" @click="isEditingAlias = false"><svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                            @keydown.enter="await updateModelConfig(modelId, { alias: newAlias }); isEditingAlias = false"
+                                            @keydown.escape="newAlias = config.alias || ''; isEditingAlias = false">
+                                        <button class="btn btn-xs btn-ghost btn-square text-green-500" @click="await updateModelConfig(modelId, { alias: newAlias }); isEditingAlias = false"><svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></button>
+                                        <button class="btn btn-xs btn-ghost btn-square text-gray-500" @click="newAlias = config.alias || ''; isEditingAlias = false"><svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
                                     </div>
                                 </td>
                                 <td>
@@ -437,17 +413,10 @@
                                         <input type="text" x-model="newMapping"
                                             class="input input-xs bg-space-800 border-space-border text-white focus:outline-none focus:border-neon-cyan w-32"
                                             placeholder="e.g. claude-3-opus-20240229"
-                                            @keydown.enter="
-                                                await updateModelConfig(modelId, { mapping: newMapping });
-                                                isEditingMapping = false;
-                                            "
-                                            @keydown.escape="isEditingMapping = false"
-                                        >
-                                        <button class="btn btn-xs btn-ghost btn-square text-green-500" @click="
-                                            await updateModelConfig(modelId, { mapping: newMapping });
-                                            isEditingMapping = false;
-                                        "><svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></button>
-                                        <button class="btn btn-xs btn-ghost btn-square text-gray-500" @click="isEditingMapping = false"><svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                            @keydown.enter="await updateModelConfig(modelId, { mapping: newMapping }); isEditingMapping = false"
+                                            @keydown.escape="newMapping = config.mapping || ''; isEditingMapping = false">
+                                        <button class="btn btn-xs btn-ghost btn-square text-green-500" @click="await updateModelConfig(modelId, { mapping: newMapping }); isEditingMapping = false"><svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></button>
+                                        <button class="btn btn-xs btn-ghost btn-square text-gray-500" @click="newMapping = config.mapping || ''; isEditingMapping = false"><svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
                                     </div>
                                 </td>
                                 <td class="text-right pr-4">
@@ -457,11 +426,9 @@
                                             :class="isPinned ? 'bg-neon-purple/20 text-neon-purple border-neon-purple/50 hover:bg-neon-purple/30' : 'btn-ghost text-gray-600 hover:text-gray-300'"
                                             @click="await updateModelConfig(modelId, { pinned: !isPinned })"
                                             :title="$store.global.t('pinToTop')">
-                                            <!-- Solid Icon when Pinned -->
                                             <svg x-show="isPinned" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                                                 <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
                                             </svg>
-                                            <!-- Outline Icon when Unpinned -->
                                             <svg x-show="!isPinned" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                                             </svg>
@@ -484,9 +451,8 @@
                                 </td>
                             </tr>
                         </template>
-                        <!-- Empty State -->
-                         <tr x-show="!$store.data.models.length">
-                            <td colspan="3" class="text-center py-8 text-gray-600 text-xs font-mono" x-text="$store.global.t('noModels')">
+                        <tr x-show="!$store.data.models.length">
+                            <td colspan="4" class="text-center py-8 text-gray-600 text-xs font-mono" x-text="$store.global.t('noModels')">
                                 NO MODELS DETECTED
                             </td>
                         </tr>
@@ -495,334 +461,220 @@
             </div>
         </div>
 
-        <!-- Tab 3: Server Info & Configuration -->
-        <div x-show="activeTab === 'server'" x-data="{
-            serverConfig: {},
-            loading: false,
-            async fetchServerConfig() {
-                const password = Alpine.store('global').webuiPassword;
-                try {
-                    const { response, newPassword } = await window.utils.request('/api/config', {}, password);
-                    if (newPassword) Alpine.store('global').webuiPassword = newPassword;
-                    if (!response.ok) throw new Error('Failed to fetch config');
-                    const data = await response.json();
-                    this.serverConfig = data.config || {};
-                } catch (e) {
-                    console.error('Failed to fetch server config:', e);
-                }
-            },
-            async saveServerConfig() {
-                this.loading = true;
-                const store = Alpine.store('global');
-                // Ensure all numeric fields are properly typed
-                const payload = {
-                    debug: !!this.serverConfig.debug,
-                    maxRetries: parseInt(this.serverConfig.maxRetries || 5),
-                    retryBaseMs: parseInt(this.serverConfig.retryBaseMs || 1000),
-                    retryMaxMs: parseInt(this.serverConfig.retryMaxMs || 30000),
-                    persistTokenCache: !!this.serverConfig.persistTokenCache,
-                    defaultCooldownMs: parseInt(this.serverConfig.defaultCooldownMs || 60000),
-                    maxWaitBeforeErrorMs: parseInt(this.serverConfig.maxWaitBeforeErrorMs || 120000)
-                };
-
-                try {
-                    const { response, newPassword } = await window.utils.request('/api/config', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    }, store.webuiPassword);
-                    if (newPassword) store.webuiPassword = newPassword;
-
-                    if (!response.ok) throw new Error('Failed to save config');
-                    store.showToast(store.t('configSaved'), 'success');
-                    await this.fetchServerConfig();
-                } catch (e) {
-                    store.showToast('Failed to save config: ' + e.message, 'error');
-                } finally {
-                    this.loading = false;
-                }
-            }
-        }" x-init="$watch('activeTab', value => { if(value === 'server') fetchServerConfig() }); fetchServerConfig()" class="space-y-6 max-w-2xl animate-fade-in">
-
-            <!-- Read-Only Info & System Status -->
-            <div class="flex items-center justify-between mb-2">
-                <div class="text-xs uppercase text-gray-500 font-bold tracking-wider">System Information</div>
-                <button @click="fetchServerConfig()" class="btn btn-xs btn-ghost text-neon-cyan gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                    Refresh
-                </button>
-            </div>
-            <div class="grid grid-cols-2 gap-4 bg-space-900/30 p-6 rounded-lg border border-space-border/50">
-                <div>
-                    <div class="text-xs text-gray-500 mb-1" x-text="$store.global.t('port')">Port</div>
-                    <div class="text-sm font-mono text-neon-cyan" x-text="$store.settings.port || '-'"></div>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-500 mb-1" x-text="$store.global.t('uiVersion')">UI Version</div>
-                    <div class="text-sm font-mono text-neon-cyan" x-text="$store.global.version"></div>
-                </div>
-            </div>
-
-            <div class="divider border-space-border/50 text-xs uppercase text-gray-500 font-semibold">Runtime Configuration</div>
-
-            <!-- Editable Configuration -->
-            <div class="space-y-6">
-                <!-- Debug Mode -->
-                <div class="form-control bg-space-900/50 p-4 rounded-lg border transition-all duration-300 hover:border-space-border cursor-pointer group"
-                    :class="serverConfig.debug ? 'border-neon-purple/50 bg-neon-purple/5 shadow-[0_0_15px_rgba(168,85,247,0.1)]' : 'border-space-border/50'"
-                    @click="serverConfig.debug = !serverConfig.debug">
-                    <label class="label cursor-pointer pointer-events-none">
-                        <div class="flex flex-col gap-1">
-                            <span class="label-text font-medium transition-colors"
-                                :class="serverConfig.debug ? 'text-neon-purple' : 'text-gray-300'">Debug Mode</span>
-                            <span class="text-xs text-gray-500">Enable detailed logging (See Logs tab)</span>
+        <!-- Tab 4: Server Configuration -->
+        <div x-show="activeTab === 'server'" x-data="window.Components.serverConfig()" class="space-y-6 max-w-2xl animate-fade-in pb-10">
+            <!-- 🔐 Security Section -->
+            <div class="glass-panel p-6 border border-neon-yellow/20 bg-neon-yellow/5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-lg bg-neon-yellow/10 flex items-center justify-center text-neon-yellow">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
                         </div>
-                        <input type="checkbox" class="toggle toggle-primary" x-model="serverConfig.debug">
-                    </label>
-                </div>
-
-                <!-- Retry Configuration -->
-                <div class="card bg-space-900/30 border border-space-border/50 p-5">
-                    <label class="label text-xs uppercase text-gray-500 font-semibold mb-3">Network Retry Settings</label>
-
-                    <div class="space-y-4">
-                        <!-- Max Retries -->
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-gray-300">Max Retries</span>
-                                <span class="label-text-alt font-mono text-neon-purple" x-text="serverConfig.maxRetries || 5"></span>
-                            </label>
-                            <input type="range" min="1" max="20" class="range range-xs range-primary"
-                                x-model="serverConfig.maxRetries">
-                            <div class="w-full flex justify-between text-xs px-2 mt-2 text-gray-600 font-mono">
-                                <span>1</span>
-                                <span>20</span>
-                            </div>
-                        </div>
-
-                        <!-- Retry Base Ms -->
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-gray-300">Retry Base Delay (ms)</span>
-                                <span class="label-text-alt font-mono text-neon-cyan" x-text="(serverConfig.retryBaseMs || 1000) + 'ms'"></span>
-                            </label>
-                            <input type="range" min="100" max="10000" step="100" class="range range-xs range-secondary"
-                                x-model="serverConfig.retryBaseMs">
-                            <div class="w-full flex justify-between text-xs px-2 mt-2 text-gray-600 font-mono">
-                                <span>100ms</span>
-                                <span>10s</span>
-                            </div>
-                        </div>
-
-                        <!-- Retry Max Ms -->
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-gray-300">Retry Max Delay (ms)</span>
-                                <span class="label-text-alt font-mono text-neon-green" x-text="(serverConfig.retryMaxMs || 30000) + 'ms'"></span>
-                            </label>
-                            <input type="range" min="1000" max="120000" step="1000" class="range range-xs range-accent"
-                                x-model="serverConfig.retryMaxMs">
-                            <div class="w-full flex justify-between text-xs px-2 mt-2 text-gray-600 font-mono">
-                                <span>1s</span>
-                                <span>120s</span>
-                            </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white mb-0.5" x-text="$store.global.t('changePassword')">WebUI Password</h4>
+                            <p class="text-xs text-gray-500" x-text="$store.global.t('changePasswordDesc')">Authentication for accessing this dashboard</p>
                         </div>
                     </div>
-                </div>
-
-                <!-- Token Cache Persistence -->
-                <div class="form-control bg-space-900/50 p-4 rounded-lg border transition-all duration-300 hover:border-space-border cursor-pointer group"
-                    :class="serverConfig.persistTokenCache ? 'border-neon-green/50 bg-neon-green/5 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'border-space-border/50'"
-                    @click="serverConfig.persistTokenCache = !serverConfig.persistTokenCache">
-                    <label class="label cursor-pointer pointer-events-none">
-                        <div class="flex flex-col gap-1">
-                            <span class="label-text font-medium transition-colors"
-                                :class="serverConfig.persistTokenCache ? 'text-neon-green' : 'text-gray-300'">Persist Token Cache</span>
-                            <span class="text-xs text-gray-500">Save OAuth tokens to disk for faster restarts</span>
-                        </div>
-                        <input type="checkbox" class="toggle toggle-secondary" x-model="serverConfig.persistTokenCache">
-                    </label>
-                </div>
-
-                <!-- Account Cooldown & Limits -->
-                <div class="card bg-space-900/30 border border-space-border/50 p-5">
-                    <label class="label text-xs uppercase text-gray-500 font-semibold mb-3">Account Rate Limiting & Timeouts</label>
-                    <div class="space-y-6">
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-gray-300">Default Cooldown Time</span>
-                                <span class="label-text-alt font-mono text-neon-cyan" x-text="Math.round((serverConfig.defaultCooldownMs || 60000) / 1000) + 's'"></span>
-                            </label>
-                            <input type="range" min="1000" max="300000" step="1000" class="range range-xs range-accent"
-                                x-model="serverConfig.defaultCooldownMs">
-                            <div class="w-full flex justify-between text-xs px-2 mt-2 text-gray-600 font-mono">
-                                <span>1s</span>
-                                <span>5min</span>
-                            </div>
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text text-gray-300">Max Wait Threshold (Sticky)</span>
-                                <span class="label-text-alt font-mono text-neon-purple" x-text="Math.round((serverConfig.maxWaitBeforeErrorMs || 120000) / 1000) + 's'"></span>
-                            </label>
-                            <input type="range" min="0" max="600000" step="10000" class="range range-xs range-primary"
-                                x-model="serverConfig.maxWaitBeforeErrorMs">
-                            <div class="w-full flex justify-between text-xs px-2 mt-2 text-gray-600 font-mono">
-                                <span>0s</span>
-                                <span>10min</span>
-                            </div>
-                            <p class="text-[10px] text-gray-600 mt-2">Maximum time to wait for a sticky account to reset before failing or switching.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Save Button -->
-                <div class="flex justify-end pt-2">
-                    <button class="btn btn-sm bg-neon-purple hover:bg-purple-600 border-none text-white px-6 gap-2"
-                        @click="saveServerConfig()" :disabled="loading">
-                        <svg x-show="!loading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                        <span x-show="!loading">Save Configuration</span>
-                        <span x-show="loading" class="loading loading-spinner loading-xs"></span>
+                    <button class="btn btn-sm border-neon-yellow/30 bg-transparent text-neon-yellow hover:bg-neon-yellow hover:text-black transition-all gap-2"
+                        @click="showPasswordDialog()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                        <span x-text="$store.global.t('changePassword')">Change Password</span>
                     </button>
                 </div>
             </div>
 
-            <div class="alert bg-blue-500/10 border-blue-500/20 text-xs">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-blue-400 shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <div class="text-blue-200">
-                    Some changes may require server restart. Config is saved to <code class="font-mono bg-blue-500/20 px-1 rounded">~/.config/antigravity-proxy/config.json</code>
+            <!-- ⚡ Common Settings -->
+            <div class="space-y-3">
+                <div class="flex items-center gap-2 mb-1 px-1">
+                    <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest" x-text="$store.global.t('runtimeConfig')">Common Settings</span>
+                    <div class="h-px flex-1 bg-space-border/30"></div>
+                </div>
+
+                <!-- Debug Mode -->
+                <div class="form-control glass-panel p-4 border border-space-border/50 hover:border-neon-purple/50 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-medium text-gray-200" :class="serverConfig.debug ? 'text-neon-purple' : ''" x-text="$store.global.t('debugMode')">Debug Mode</span>
+                            <span class="text-[11px] text-gray-500" x-text="$store.global.t('debugDesc')">Detailed logging in the Logs tab</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer"
+                                :checked="serverConfig.debug === true"
+                                @change="toggleDebug($el.checked)">
+                            <div class="w-9 h-5 bg-space-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-600 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neon-purple peer-checked:after:bg-white"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Token Cache -->
+                <div class="form-control glass-panel p-4 border border-space-border/50 hover:border-neon-green/50 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-sm font-medium text-gray-200" :class="serverConfig.persistTokenCache ? 'text-neon-green' : ''" x-text="$store.global.t('persistTokenCache')">Persist Token Cache</span>
+                            <span class="text-[11px] text-gray-500" x-text="$store.global.t('persistTokenDesc')">Save OAuth tokens to disk for faster restarts</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer"
+                                :checked="serverConfig.persistTokenCache === true"
+                                @change="toggleTokenCache($el.checked)">
+                            <div class="w-9 h-5 bg-space-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-gray-600 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neon-green peer-checked:after:bg-white"></div>
+                        </label>
+                    </div>
                 </div>
             </div>
 
-            <!-- Security & Advanced -->
-            <div class="pt-6 border-t border-space-border/30">
-                <h4 class="text-sm font-bold text-white mb-4" x-text="$store.global.t('dangerZone')">Danger Zone / Advanced</h4>
-
-                <div class="space-y-4">
-                    <!-- Change Password -->
-                    <div class="flex items-center justify-between p-4 border border-space-border/50 rounded-lg bg-space-900/20"
-                        x-data="{
-                            showPasswordDialog: false,
-                            oldPassword: '',
-                            newPassword: '',
-                            confirmPassword: '',
-                            async changePassword() {
-                                const store = Alpine.store('global');
-                                if (this.newPassword !== this.confirmPassword) {
-                                    store.showToast('Passwords do not match', 'error');
-                                    return;
-                                }
-                                if (this.newPassword.length < 6) {
-                                    store.showToast('Password must be at least 6 characters', 'error');
-                                    return;
-                                }
-                                try {
-                                    const { response, newPassword: updatedPassword } = await window.utils.request('/api/config/password', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            oldPassword: this.oldPassword,
-                                            newPassword: this.newPassword
-                                        })
-                                    }, store.webuiPassword);
-
-                                    if (!response.ok) {
-                                        const data = await response.json();
-                                        throw new Error(data.error || 'Failed to change password');
-                                    }
-
-                                    // Update stored password
-                                    store.webuiPassword = this.newPassword;
-                                    store.showToast('Password changed successfully', 'success');
-                                    this.showPasswordDialog = false;
-                                    this.oldPassword = '';
-                                    this.newPassword = '';
-                                    this.confirmPassword = '';
-                                } catch (e) {
-                                    store.showToast('Failed to change password: ' + e.message, 'error');
-                                }
-                            }
-                        }">
-                        <div>
-                            <div class="font-medium text-gray-300 text-sm">Change WebUI Password</div>
-                            <div class="text-xs text-gray-500">Update the password for accessing this dashboard</div>
+            <!-- ▼ Advanced Tuning (Fixed Logic) -->
+            <div class="glass-panel border border-space-border/50 overflow-hidden">
+                <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-white/5 transition-colors"
+                    @click="advancedExpanded = !advancedExpanded">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded bg-space-800 flex items-center justify-center text-neon-cyan">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                            </svg>
                         </div>
-                        <button class="btn btn-sm btn-outline border-space-border hover:bg-yellow-500 hover:text-black hover:border-yellow-500 text-gray-400"
-                            @click="showPasswordDialog = true">
-                            Change Password
-                        </button>
+                        <div>
+                            <span class="text-sm font-semibold text-gray-200" x-text="$store.global.t('dangerZone')">Advanced Tuning</span>
+                            <span class="text-[10px] text-gray-600 block" x-text="$store.global.t('serverReadOnly')">Experienced users only</span>
+                        </div>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600 transition-transform duration-300"
+                        :class="advancedExpanded ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
 
-                        <!-- Password Dialog -->
-                        <div x-show="showPasswordDialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]" @click.self="showPasswordDialog = false">
-                            <div class="bg-space-900 border border-space-border rounded-lg p-6 max-w-md w-full mx-4" @click.stop>
-                                <h3 class="text-lg font-bold text-white mb-4">Change WebUI Password</h3>
+                <div x-show="advancedExpanded" x-cloak class="p-5 pt-0 space-y-6">
+                    <div class="h-px bg-space-border/20 mb-4"></div>
 
-                                <div class="space-y-4">
-                                    <div class="form-control">
-                                        <label class="label">
-                                            <span class="label-text text-gray-300">Current Password</span>
-                                        </label>
-                                        <input type="password" x-model="oldPassword"
-                                            class="input input-sm input-bordered bg-space-800 border-space-border text-white w-full"
-                                            placeholder="Leave empty if no password set">
-                                    </div>
+                    <!-- Network Retry Settings -->
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest" x-text="$store.global.t('networkRetry')">Network Retry Settings</span>
+                        </div>
 
-                                    <div class="form-control">
-                                        <label class="label">
-                                            <span class="label-text text-gray-300">New Password</span>
-                                        </label>
-                                        <input type="password" x-model="newPassword"
-                                            class="input input-sm input-bordered bg-space-800 border-space-border text-white w-full"
-                                            placeholder="At least 6 characters">
-                                    </div>
+                        <div class="form-control">
+                            <label class="label pt-0">
+                                <span class="label-text text-gray-400 text-xs" x-text="$store.global.t('maxRetries')">Max Retries</span>
+                                <span class="label-text-alt font-mono text-neon-purple text-xs font-semibold" x-text="serverConfig.maxRetries || 5"></span>
+                            </label>
+                            <input type="range" min="1" max="20" class="custom-range custom-range-purple"
+                                :value="serverConfig.maxRetries || 5"
+                                :style="`background-size: ${((serverConfig.maxRetries || 5) - 1) / 19 * 100}% 100%`"
+                                @input="toggleMaxRetries($event.target.value)">
+                        </div>
 
-                                    <div class="form-control">
-                                        <label class="label">
-                                            <span class="label-text text-gray-300">Confirm New Password</span>
-                                        </label>
-                                        <input type="password" x-model="confirmPassword"
-                                            class="input input-sm input-bordered bg-space-800 border-space-border text-white w-full"
-                                            placeholder="Re-enter new password"
-                                            @keydown.enter="changePassword()">
-                                    </div>
-                                </div>
-
-                                <div class="flex justify-end gap-2 mt-6">
-                                    <button class="btn btn-sm btn-ghost text-gray-400" @click="showPasswordDialog = false; oldPassword = ''; newPassword = ''; confirmPassword = ''">Cancel</button>
-                                    <button class="btn btn-sm bg-neon-purple hover:bg-purple-600 border-none text-white" @click="changePassword()">
-                                        Change Password
-                                    </button>
-                                </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-control">
+                                <label class="label pt-0">
+                                    <span class="label-text text-gray-400 text-xs" x-text="$store.global.t('retryBaseDelay')">Base Delay</span>
+                                    <span class="label-text-alt font-mono text-neon-green text-xs font-semibold"
+                                        x-text="((serverConfig.retryBaseMs || 1000) < 10000 ? (serverConfig.retryBaseMs || 1000) + 'ms' : Math.round((serverConfig.retryBaseMs || 1000) / 1000) + 's')"></span>
+                                </label>
+                                <input type="range" min="100" max="10000" step="100" class="custom-range custom-range-green"
+                                    :value="serverConfig.retryBaseMs || 1000"
+                                    :style="`background-size: ${((serverConfig.retryBaseMs || 1000) - 100) / 99}% 100%`"
+                                    @input="toggleRetryBaseMs($event.target.value)">
+                            </div>
+                            <div class="form-control">
+                                <label class="label pt-0">
+                                    <span class="label-text text-gray-400 text-xs" x-text="$store.global.t('retryMaxDelay')">Max Delay</span>
+                                    <span class="label-text-alt font-mono text-neon-green text-xs font-semibold"
+                                        x-text="Math.round((serverConfig.retryMaxMs || 30000) / 1000) + 's'"></span>
+                                </label>
+                                <input type="range" min="1000" max="120000" step="1000" class="custom-range custom-range-green"
+                                    :value="serverConfig.retryMaxMs || 30000"
+                                    :style="`background-size: ${((serverConfig.retryMaxMs || 30000) - 1000) / 1190}% 100%`"
+                                    @input="toggleRetryMaxMs($event.target.value)">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Reload Config -->
-                    <div class="flex items-center justify-between p-4 border border-space-border/50 rounded-lg bg-space-900/20">
-                        <div>
-                            <div class="font-medium text-gray-300 text-sm" x-text="$store.global.t('reloadConfigTitle')">Reload Account Config</div>
-                            <div class="text-xs text-gray-500" x-text="$store.global.t('reloadConfigDesc')">Force reload accounts.json from disk</div>
+                    <!-- Account Rate Limiting -->
+                    <div class="space-y-4 pt-2 border-t border-space-border/10">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest" x-text="$store.global.t('rateLimiting')">Rate Limiting & Timeouts</span>
                         </div>
-                        <button class="btn btn-sm btn-outline border-space-border hover:bg-white hover:text-black hover:border-white text-gray-400"
-                            @click="async () => {
-                                const store = Alpine.store('global');
-                                store.showToast(store.t('reloading'), 'info');
-                                try {
-                                    const { response, newPassword } = await window.utils.request('/api/accounts/reload', { method: 'POST' }, store.webuiPassword);
-                                    if (newPassword) store.webuiPassword = newPassword;
-                                    if (response.ok) {
-                                        store.showToast(store.t('reloaded'), 'success');
-                                        Alpine.store('data').fetchData();
-                                    } else {
-                                        throw new Error('Failed to reload');
-                                    }
-                                } catch (e) {
-                                    store.showToast(store.t('reloadFailed') + ': ' + e.message, 'error');
-                                }
-                            }"
-                            x-text="$store.global.t('reload')">
-                            Reload
+
+                        <div class="form-control">
+                            <label class="label pt-0">
+                                <span class="label-text text-gray-400 text-xs" x-text="$store.global.t('defaultCooldown')">Default Cooldown</span>
+                                <span class="label-text-alt font-mono text-neon-cyan text-xs font-semibold"
+                                    x-text="Math.round((serverConfig.defaultCooldownMs || 60000) / 1000) + 's'"></span>
+                            </label>
+                            <input type="range" min="1000" max="300000" step="1000" class="custom-range custom-range-cyan"
+                                :value="serverConfig.defaultCooldownMs || 60000"
+                                :style="`background-size: ${((serverConfig.defaultCooldownMs || 60000) - 1000) / 2990}% 100%`"
+                                @input="toggleDefaultCooldownMs($event.target.value)">
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label pt-0">
+                                <span class="label-text text-gray-400 text-xs" x-text="$store.global.t('maxWaitThreshold')">Max Wait (Sticky)</span>
+                                <span class="label-text-alt font-mono text-neon-cyan text-xs font-semibold"
+                                    x-text="((serverConfig.maxWaitBeforeErrorMs || 120000) >= 60000 ? Math.round((serverConfig.maxWaitBeforeErrorMs || 120000) / 60000) + 'm' : Math.round((serverConfig.maxWaitBeforeErrorMs || 120000) / 1000) + 's')"></span>
+                            </label>
+                            <input type="range" min="0" max="600000" step="10000" class="custom-range custom-range-cyan"
+                                :value="serverConfig.maxWaitBeforeErrorMs || 120000"
+                                :style="`background-size: ${(serverConfig.maxWaitBeforeErrorMs || 120000) / 6000}% 100%`"
+                                @input="toggleMaxWaitBeforeErrorMs($event.target.value)">
+                            <p class="text-[9px] text-gray-600 mt-1 leading-tight" x-text="$store.global.t('maxWaitDesc')">Maximum time to wait for a sticky account to reset before switching.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ℹ️ Info Notice -->
+            <div class="flex items-center gap-3 text-xs text-gray-600 italic pt-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span x-text="$store.global.t('serverRestartAlert', {path: '~/.config/antigravity-proxy/config.json'})">All changes are saved automatically. Some settings may require server restart.</span>
+            </div>
+
+            <!-- Password Dialog -->
+            <div x-show="passwordDialog.show" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]" @click.self="hidePasswordDialog()" x-cloak>
+                <div class="bg-space-900 border border-space-border rounded-lg p-6 max-w-md w-full mx-4" @click.stop>
+                    <h3 class="text-lg font-bold text-white mb-4" x-text="$store.global.t('changePassword')">Change WebUI Password</h3>
+
+                    <div class="space-y-4">
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-gray-300" x-text="$store.global.t('currentPassword')">Current Password</span>
+                            </label>
+                            <input type="password" x-model="passwordDialog.oldPassword"
+                                class="input input-sm input-bordered bg-space-800 border-space-border text-white w-full"
+                                :placeholder="$store.global.t('passwordEmptyDesc')">
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-gray-300" x-text="$store.global.t('newPassword')">New Password</span>
+                            </label>
+                            <input type="password" x-model="passwordDialog.newPassword"
+                                class="input input-sm input-bordered bg-space-800 border-space-border text-white w-full"
+                                :placeholder="$store.global.t('passwordLengthDesc')">
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-gray-300" x-text="$store.global.t('confirmNewPassword')">Confirm New Password</span>
+                            </label>
+                            <input type="password" x-model="passwordDialog.confirmPassword"
+                                class="input input-sm input-bordered bg-space-800 border-space-border text-white w-full"
+                                :placeholder="$store.global.t('passwordConfirmDesc')"
+                                @keydown.enter="changePassword()">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2 mt-6">
+                        <button class="btn btn-sm btn-ghost text-gray-400" @click="hidePasswordDialog()" x-text="$store.global.t('cancel')">Cancel</button>
+                        <button class="btn btn-sm bg-neon-purple hover:bg-purple-600 border-none text-white" @click="changePassword()" x-text="$store.global.t('changePassword')">
+                            Change Password
                         </button>
                     </div>
                 </div>

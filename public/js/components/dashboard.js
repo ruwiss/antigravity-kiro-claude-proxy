@@ -573,18 +573,19 @@ window.Components.dashboard = () => ({
 
             const familyColor = familyColors[family] || familyColors['unknown'];
 
-            // Get translation keys if available, otherwise capitalize
-            const familyName = family.charAt(0).toUpperCase() + family.slice(1);
+            // Get translation keys
             const store = Alpine.store('global');
+            const familyKey = 'family' + family.charAt(0).toUpperCase() + family.slice(1);
+            const familyName = store.t(familyKey);
 
             // Labels using translations if possible
             const activeLabel = family === 'claude' ? store.t('claudeActive') :
                               family === 'gemini' ? store.t('geminiActive') :
-                              `${familyName} Active`;
+                              `${familyName} ${store.t('activeSuffix')}`;
 
             const depletedLabel = family === 'claude' ? store.t('claudeEmpty') :
                                 family === 'gemini' ? store.t('geminiEmpty') :
-                                `${familyName} Depleted`;
+                                `${familyName} ${store.t('depleted')}`;
 
             // Active segment
             data.push(activeVal);

@@ -37,8 +37,12 @@ window.utils = {
         if (diff <= 0) return store ? store.t('ready') : 'READY';
         const mins = Math.floor(diff / 60000);
         const hrs = Math.floor(mins / 60);
-        if (hrs > 0) return `${hrs}H ${mins % 60}M`;
-        return `${mins}M`;
+
+        const hSuffix = store ? store.t('timeH') : 'H';
+        const mSuffix = store ? store.t('timeM') : 'M';
+
+        if (hrs > 0) return `${hrs}${hSuffix} ${mins % 60}${mSuffix}`;
+        return `${mins}${mSuffix}`;
     },
 
     getThemeColor(name) {
