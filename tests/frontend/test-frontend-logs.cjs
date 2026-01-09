@@ -1,13 +1,13 @@
 /**
  * Frontend Test Suite - Logs Page
  * Tests the logs viewer component functionality
- * 
+ *
  * Run: node tests/test-frontend-logs.cjs
  */
 
 const http = require('http');
 
-const BASE_URL = 'http://localhost:8090';
+const BASE_URL = process.env.TEST_BASE_URL || `http://localhost:${process.env.PORT || 8080}`;
 
 function request(path, options = {}) {
     return new Promise((resolve, reject) => {

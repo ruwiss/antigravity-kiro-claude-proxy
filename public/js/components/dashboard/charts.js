@@ -337,12 +337,43 @@ window.DashboardCharts.updateTrendChart = function (component) {
     "[updateTrendChart] Canvas is ready, proceeding with chart creation"
   );
 
-  const history = component.historyData;
+  // Use filtered history data based on time range
+  const history = window.DashboardFilters.getFilteredHistoryData(component);
   if (!history || Object.keys(history).length === 0) {
-    console.warn("No history data available for trend chart");
+    console.warn("No history data available for trend chart (after filtering)");
+    component.hasFilteredTrendData = false;
     _trendChartUpdateLock = false;
     return;
   }
+
+  component.hasFilteredTrendData = true;
+
+  // Sort entries by timestamp for correct order
+  const sortedEntries = Object.entries(history).sort(
+    ([a], [b]) => new Date(a).getTime() - new Date(b).getTime()
+  );
+
+  // Determine if data spans multiple days (for smart label formatting)
+  const timestamps = sortedEntries.map(([iso]) => new Date(iso));
+  const isMultiDay = timestamps.length > 1 && 
+    timestamps[0].toDateString() !== timestamps[timestamps.length - 1].toDateString();
+
+  // Helper to format X-axis labels based on time range and multi-day status
+  const formatLabel = (date) => {
+    const timeRange = component.timeRange || '24h';
+    
+    if (timeRange === '7d') {
+      // Week view: show MM/DD
+      return date.toLocaleDateString([], { month: '2-digit', day: '2-digit' });
+    } else if (isMultiDay || timeRange === 'all') {
+      // Multi-day data: show MM/DD HH:MM
+      return date.toLocaleDateString([], { month: '2-digit', day: '2-digit' }) + ' ' +
+             date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+      // Same day: show HH:MM only
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+  };
 
   const labels = [];
   const datasets = [];
@@ -354,11 +385,9 @@ window.DashboardCharts.updateTrendChart = function (component) {
       dataByFamily[family] = [];
     });
 
-    Object.entries(history).forEach(([iso, hourData]) => {
+    sortedEntries.forEach(([iso, hourData]) => {
       const date = new Date(iso);
-      labels.push(
-        date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      );
+      labels.push(formatLabel(date));
 
       component.selectedFamilies.forEach((family) => {
         const familyData = hourData[family];
@@ -394,11 +423,9 @@ window.DashboardCharts.updateTrendChart = function (component) {
       });
     });
 
-    Object.entries(history).forEach(([iso, hourData]) => {
+    sortedEntries.forEach(([iso, hourData]) => {
       const date = new Date(iso);
-      labels.push(
-        date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      );
+      labels.push(formatLabel(date));
 
       component.families.forEach((family) => {
         const familyData = hourData[family] || {};

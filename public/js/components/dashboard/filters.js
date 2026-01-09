@@ -10,10 +10,13 @@ window.DashboardFilters = window.DashboardFilters || {};
  */
 window.DashboardFilters.getInitialState = function() {
     return {
+        timeRange: '24h',  // '1h', '6h', '24h', '7d', 'all'
         displayMode: 'model',
         selectedFamilies: [],
         selectedModels: {},
-        showModelFilter: false
+        showModelFilter: false,
+        showTimeRangeDropdown: false,
+        showDisplayModeDropdown: false
     };
 };
 
@@ -26,6 +29,7 @@ window.DashboardFilters.loadPreferences = function(component) {
         const saved = localStorage.getItem('dashboard_chart_prefs');
         if (saved) {
             const prefs = JSON.parse(saved);
+            component.timeRange = prefs.timeRange || '24h';
             component.displayMode = prefs.displayMode || 'model';
             component.selectedFamilies = prefs.selectedFamilies || [];
             component.selectedModels = prefs.selectedModels || {};
@@ -42,6 +46,7 @@ window.DashboardFilters.loadPreferences = function(component) {
 window.DashboardFilters.savePreferences = function(component) {
     try {
         localStorage.setItem('dashboard_chart_prefs', JSON.stringify({
+            timeRange: component.timeRange,
             displayMode: component.displayMode,
             selectedFamilies: component.selectedFamilies,
             selectedModels: component.selectedModels
@@ -58,9 +63,76 @@ window.DashboardFilters.savePreferences = function(component) {
  */
 window.DashboardFilters.setDisplayMode = function(component, mode) {
     component.displayMode = mode;
+    component.showDisplayModeDropdown = false;
     window.DashboardFilters.savePreferences(component);
     // updateTrendChart uses debounce internally, call directly
     component.updateTrendChart();
+};
+
+/**
+ * Set time range filter
+ * @param {object} component - Dashboard component instance
+ * @param {string} range - '1h', '6h', '24h', '7d', 'all'
+ */
+window.DashboardFilters.setTimeRange = function(component, range) {
+    component.timeRange = range;
+    component.showTimeRangeDropdown = false;
+    window.DashboardFilters.savePreferences(component);
+    component.updateTrendChart();
+};
+
+/**
+ * Get time range cutoff timestamp
+ * @param {string} range - Time range code
+ * @returns {number|null} Cutoff timestamp or null for 'all'
+ */
+window.DashboardFilters.getTimeRangeCutoff = function(range) {
+    const now = Date.now();
+    switch (range) {
+        case '1h': return now - 1 * 60 * 60 * 1000;
+        case '6h': return now - 6 * 60 * 60 * 1000;
+        case '24h': return now - 24 * 60 * 60 * 1000;
+        case '7d': return now - 7 * 24 * 60 * 60 * 1000;
+        default: return null; // 'all'
+    }
+};
+
+/**
+ * Get filtered history data based on time range
+ * @param {object} component - Dashboard component instance
+ * @returns {object} Filtered history data
+ */
+window.DashboardFilters.getFilteredHistoryData = function(component) {
+    const history = component.historyData;
+    if (!history || Object.keys(history).length === 0) return {};
+
+    const cutoff = window.DashboardFilters.getTimeRangeCutoff(component.timeRange);
+    if (!cutoff) return history; // 'all' - return everything
+
+    const filtered = {};
+    Object.entries(history).forEach(([iso, data]) => {
+        const timestamp = new Date(iso).getTime();
+        if (timestamp >= cutoff) {
+            filtered[iso] = data;
+        }
+    });
+    return filtered;
+};
+
+/**
+ * Get time range label for display
+ * @param {object} component - Dashboard component instance
+ * @returns {string} Translated label
+ */
+window.DashboardFilters.getTimeRangeLabel = function(component) {
+    const store = Alpine.store('global');
+    switch (component.timeRange) {
+        case '1h': return store.t('last1Hour');
+        case '6h': return store.t('last6Hours');
+        case '24h': return store.t('last24Hours');
+        case '7d': return store.t('last7Days');
+        default: return store.t('allTime');
+    }
 };
 
 /**

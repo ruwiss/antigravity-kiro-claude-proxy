@@ -1,13 +1,13 @@
 /**
  * Frontend Test Suite - Dashboard Page
  * Tests the dashboard component functionality
- * 
+ *
  * Run: node tests/test-frontend-dashboard.cjs
  */
 
 const http = require('http');
 
-const BASE_URL = 'http://localhost:8090';
+const BASE_URL = process.env.TEST_BASE_URL || `http://localhost:${process.env.PORT || 8080}`;
 
 // Helper to make HTTP requests
 function request(path, options = {}) {

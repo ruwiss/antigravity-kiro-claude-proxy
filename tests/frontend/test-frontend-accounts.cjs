@@ -1,13 +1,13 @@
 /**
  * Frontend Test Suite - Accounts Page
  * Tests the account manager component functionality
- * 
+ *
  * Run: node tests/test-frontend-accounts.cjs
  */
 
 const http = require('http');
 
-const BASE_URL = 'http://localhost:8090';
+const BASE_URL = process.env.TEST_BASE_URL || `http://localhost:${process.env.PORT || 8080}`;
 
 function request(path, options = {}) {
     return new Promise((resolve, reject) => {

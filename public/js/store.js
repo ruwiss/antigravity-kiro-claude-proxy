@@ -160,9 +160,15 @@ document.addEventListener('alpine:init', () => {
                 claudeEmpty: "Claude Empty",
                 geminiActive: "Gemini Active",
                 geminiEmpty: "Gemini Empty",
-                fix: "FIX",
                 synced: "SYNCED",
                 syncing: "SYNCING...",
+                // Time range labels
+                last1Hour: "Last 1H",
+                last6Hours: "Last 6H",
+                last24Hours: "Last 24H",
+                last7Days: "Last 7D",
+                allTime: "All Time",
+                groupBy: "Group By",
                 // Additional
                 reloading: "Reloading...",
                 reloaded: "Reloaded",
@@ -401,9 +407,15 @@ document.addEventListener('alpine:init', () => {
                 claudeEmpty: "Claude 耗尽",
                 geminiActive: "Gemini 活跃",
                 geminiEmpty: "Gemini 耗尽",
-                fix: "修复",
                 synced: "已同步",
                 syncing: "正在同步...",
+                // 时间范围标签
+                last1Hour: "最近 1 小时",
+                last6Hours: "最近 6 小时",
+                last24Hours: "最近 24 小时",
+                last7Days: "最近 7 天",
+                allTime: "最后全部",
+                groupBy: "分组方式",
                 // Additional
                 reloading: "正在重载...",
                 reloaded: "已重载",

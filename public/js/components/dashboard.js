@@ -8,6 +8,7 @@ window.Components = window.Components || {};
 window.Components.dashboard = () => ({
     // Core state
     stats: { total: 0, active: 0, limited: 0, overallHealth: 0, hasTrendData: false },
+    hasFilteredTrendData: true,
     charts: { quotaDistribution: null, usageTrend: null },
     usageStats: { total: 0, today: 0, thisHour: 0 },
     historyData: {},
@@ -163,6 +164,14 @@ window.Components.dashboard = () => ({
 
     setDisplayMode(mode) {
         window.DashboardFilters.setDisplayMode(this, mode);
+    },
+
+    setTimeRange(range) {
+        window.DashboardFilters.setTimeRange(this, range);
+    },
+
+    getTimeRangeLabel() {
+        return window.DashboardFilters.getTimeRangeLabel(this);
     },
 
     toggleFamily(family) {
