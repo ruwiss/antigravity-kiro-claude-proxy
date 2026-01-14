@@ -7,10 +7,15 @@
  * - Different content types (text, tools, system prompts)
  */
 const http = require('http');
+const { getModels } = require('./helpers/test-models.cjs');
 
 // Server configuration
 const BASE_URL = 'localhost';
 const PORT = 8080;
+
+// Test models - initialized from constants
+let CLAUDE_MODEL;
+let GEMINI_MODEL;
 
 /**
  * Make a request to the count_tokens endpoint
@@ -50,9 +55,15 @@ function countTokensRequest(body) {
 }
 
 async function runTests() {
+    // Load test models from constants
+    const testModels = await getModels();
+    CLAUDE_MODEL = testModels.claude;
+    GEMINI_MODEL = testModels.gemini;
+
     console.log('╔══════════════════════════════════════════════════════════════╗');
     console.log('║           COUNT TOKENS ENDPOINT TEST SUITE                   ║');
     console.log('╚══════════════════════════════════════════════════════════════╝\n');
+    console.log(`Using models: Claude=${CLAUDE_MODEL}, Gemini=${GEMINI_MODEL}\n`);
 
     let passed = 0;
     let failed = 0;
@@ -89,7 +100,7 @@ async function runTests() {
     // Test 1: Simple text message
     await test('Simple text message returns token count', async () => {
         const response = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: [
                 { role: 'user', content: 'Hello, how are you?' }
             ]
@@ -103,7 +114,7 @@ async function runTests() {
     // Test 2: Multi-turn conversation
     await test('Multi-turn conversation counts all messages', async () => {
         const response = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: [
                 { role: 'user', content: 'What is the capital of France?' },
                 { role: 'assistant', content: 'The capital of France is Paris.' },
@@ -120,7 +131,7 @@ async function runTests() {
     // Test 3: System prompt
     await test('System prompt tokens are counted', async () => {
         const responseWithSystem = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             system: 'You are a helpful assistant that speaks like a pirate.',
             messages: [
                 { role: 'user', content: 'Hello' }
@@ -128,7 +139,7 @@ async function runTests() {
         });
 
         const responseWithoutSystem = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: [
                 { role: 'user', content: 'Hello' }
             ]
@@ -143,7 +154,7 @@ async function runTests() {
     // Test 4: System prompt as array
     await test('System prompt as array is counted', async () => {
         const response = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             system: [
                 { type: 'text', text: 'You are a helpful assistant.' },
                 { type: 'text', text: 'Be concise and clear.' }
@@ -161,7 +172,7 @@ async function runTests() {
     // Test 5: With tools
     await test('Tool definitions are counted', async () => {
         const responseWithTools = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: [
                 { role: 'user', content: 'Get the weather in Tokyo' }
             ],
@@ -181,7 +192,7 @@ async function runTests() {
         });
 
         const responseWithoutTools = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: [
                 { role: 'user', content: 'Get the weather in Tokyo' }
             ]
@@ -196,7 +207,7 @@ async function runTests() {
     // Test 6: Content as array with text blocks
     await test('Content array with text blocks', async () => {
         const response = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: [
                 {
                     role: 'user',
@@ -216,7 +227,7 @@ async function runTests() {
     // Test 7: Tool use and tool result blocks
     await test('Tool use and tool result blocks are counted', async () => {
         const response = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: [
                 { role: 'user', content: 'What is the weather in Paris?' },
                 {
@@ -263,7 +274,7 @@ async function runTests() {
     // Test 8: Thinking blocks
     await test('Thinking blocks are counted', async () => {
         const response = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: [
                 { role: 'user', content: 'Solve this problem step by step' },
                 {
@@ -289,7 +300,7 @@ async function runTests() {
     await test('Long text message', async () => {
         const longText = 'This is a test message. '.repeat(100);
         const response = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: [
                 { role: 'user', content: longText }
             ]
@@ -304,7 +315,7 @@ async function runTests() {
     // Test 10: Missing messages field (error case)
     await test('Missing messages returns error', async () => {
         const response = await countTokensRequest({
-            model: 'claude-sonnet-4-5'
+            model: CLAUDE_MODEL
         });
 
         assert(response.statusCode === 400, `Expected 400, got ${response.statusCode}`);
@@ -330,7 +341,7 @@ async function runTests() {
     // Test 12: Invalid messages type (error case)
     await test('Invalid messages type returns error', async () => {
         const response = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: 'not an array'
         });
 
@@ -341,7 +352,7 @@ async function runTests() {
     // Test 13: Empty messages array
     await test('Empty messages array returns token count', async () => {
         const response = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: []
         });
 
@@ -352,7 +363,7 @@ async function runTests() {
     // Test 14: Multiple tools with complex schemas
     await test('Multiple tools with complex schemas', async () => {
         const response = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: [
                 { role: 'user', content: 'Help me with file operations' }
             ],
@@ -406,7 +417,7 @@ async function runTests() {
     // Test 15: Tool result as array content
     await test('Tool result with array content', async () => {
         const response = await countTokensRequest({
-            model: 'claude-sonnet-4-5',
+            model: CLAUDE_MODEL,
             messages: [
                 { role: 'user', content: 'Search for files' },
                 {
@@ -439,7 +450,7 @@ async function runTests() {
     // Test 16: Gemini model token counting
     await test('Gemini model returns token count', async () => {
         const response = await countTokensRequest({
-            model: 'gemini-3-flash',
+            model: GEMINI_MODEL,
             messages: [
                 { role: 'user', content: 'Hello, how are you?' }
             ]
@@ -453,7 +464,7 @@ async function runTests() {
     // Test 17: Gemini model with system prompt and tools
     await test('Gemini model with system prompt and tools', async () => {
         const response = await countTokensRequest({
-            model: 'gemini-3-flash',
+            model: GEMINI_MODEL,
             system: 'You are a helpful assistant.',
             messages: [
                 { role: 'user', content: 'What is the weather in Tokyo?' }
