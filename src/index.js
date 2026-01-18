@@ -3,7 +3,8 @@
  * Entry point - starts the proxy server
  */
 
-import app, { accountManager } from './server.js';
+import app, { accountManager, ensureInitialized } from './server.js';
+import { startKiroServer } from './kiro/index.js';
 import { DEFAULT_PORT } from './constants.js';
 import { logger } from './utils/logger.js';
 import { getStrategyLabel, STRATEGY_NAMES, DEFAULT_STRATEGY } from './account-manager/strategies/index.js';
@@ -16,6 +17,7 @@ import readline from 'readline';
 const args = process.argv.slice(2);
 const isDebug = args.includes('--debug') || process.env.DEBUG === 'true';
 const isFallbackEnabled = args.includes('--fallback') || process.env.FALLBACK === 'true';
+const isKiroEnabled = args.includes('--enable-kiro');
 
 // Parse --strategy flag (format: --strategy=sticky or --strategy sticky)
 let strategyOverride = null;
@@ -41,6 +43,10 @@ if (isDebug) {
 
 if (isFallbackEnabled) {
     logger.info('Model fallback mode enabled');
+}
+
+if (isKiroEnabled) {
+    logger.info('Kiro support enabled');
 }
 
 // Export fallback flag for server to use
@@ -142,6 +148,14 @@ const server = app.listen(PORT, () => {
     if (isFallbackEnabled) {
         statusSection += '║    ✓ Model fallback enabled                                  ║\n';
     }
+    if (isKiroEnabled) {
+        statusSection += '║    ✓ Kiro support enabled                                    ║\n';
+    }
+
+    // Start Kiro server if enabled
+    if (isKiroEnabled) {
+        startKiroServer(accountManager, FALLBACK_ENABLED, ensureInitialized);
+    }
 
     logger.log(`
 ╔══════════════════════════════════════════════════════════════╗
@@ -149,7 +163,7 @@ const server = app.listen(PORT, () => {
 ╠══════════════════════════════════════════════════════════════╣
 ║                                                              ║
 ${border}  ${align(`Server and WebUI running at: http://localhost:${PORT}`)}${border}
-${border}  ${align(`Kiro Proxy running at:       http://localhost:9980`)}${border}
+${isKiroEnabled ? `${border}  ${align(`Kiro Proxy running at:       http://localhost:9980`)}${border}` : ''}
 ${statusSection}║                                                              ║
 ${controlSection}
 ║                                                              ║

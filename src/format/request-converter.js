@@ -64,6 +64,20 @@ export function convertAnthropicToGoogle(anthropicRequest) {
         }
     }
 
+    // Inject brevity instruction for file edits (User Request)
+    const brevityInstruction = "IMPORTANT: When executing tool calls to modify files, ALWAYS provide the FULL, complete code in the tool arguments. However, in your conversational RESPONSE message to the user afterward, DO NOT repeat the code you just wrote. Instead, provide a concise summary of the changes.";
+
+    if (!googleRequest.systemInstruction) {
+        googleRequest.systemInstruction = { parts: [{ text: brevityInstruction }] };
+    } else {
+        const lastPart = googleRequest.systemInstruction.parts[googleRequest.systemInstruction.parts.length - 1];
+        if (lastPart && lastPart.text) {
+            lastPart.text = `${lastPart.text}\n\n${brevityInstruction}`;
+        } else {
+            googleRequest.systemInstruction.parts.push({ text: brevityInstruction });
+        }
+    }
+
     // Add interleaved thinking hint for Claude thinking models with tools
     if (isClaudeModel && isThinking && tools && tools.length > 0) {
         const hint = 'Interleaved thinking is enabled. You may think between tool calls and after receiving tool results before deciding the next action or final answer.';

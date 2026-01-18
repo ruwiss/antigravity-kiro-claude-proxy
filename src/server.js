@@ -10,7 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { sendMessage, sendMessageStream, listModels, getModelQuotas, getSubscriptionTier } from './cloudcode/index.js';
 import { mountWebUI } from './webui/index.js';
-import { startKiroServer } from './kiro/index.js';
+import { startKiroServer } from './kiro/index.js'; // Keep import for now, but will move logic to index.js
 import { config } from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -53,7 +53,7 @@ let initPromise = null;
 /**
  * Ensure account manager is initialized (with race condition protection)
  */
-async function ensureInitialized() {
+export async function ensureInitialized() {
     if (isInitialized) return;
 
     // If initialization is already in progress, wait for it
@@ -135,7 +135,8 @@ app.use((req, res, next) => {
 mountWebUI(app, __dirname, accountManager);
 
 // Start Kiro dedicated server (AWS CodeWhisperer compatibility)
-startKiroServer(accountManager, FALLBACK_ENABLED, ensureInitialized);
+// Start Kiro dedicated server call moved to index.js for optional startup
+// startKiroServer(accountManager, FALLBACK_ENABLED, ensureInitialized);
 
 /**
  * Parse error message to extract error type, status code, and user-friendly message

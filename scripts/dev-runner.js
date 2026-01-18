@@ -64,7 +64,7 @@ async function getKiroPath() {
     if (!fs.existsSync(extensionPath)) {
         console.error(`\nERROR: Extension file not found at: ${extensionPath}`);
         console.error(`Please verify the Kiro installation path.`);
-        process.exit(1);
+        throw new Error('Extension file not found');
     }
 
     // Save config
@@ -121,7 +121,7 @@ async function patchExtension(resourcesPath) {
     } catch (e) {
         console.error(`Error patching file: ${e.message}`);
         console.error('Run via Administrator/Sudo if permission denied.');
-        process.exit(1);
+        throw e;
     }
 }
 
@@ -129,18 +129,13 @@ function startKiro(resourcesPath) {
     console.log('Starting Kiro...');
 
     // Determine executable path from resources path
-    // Default assumption: executable is in parent of resources (win/linux) or specific structure (mac)
     let exePath = '';
 
     if (isWin) {
-        // resources/../Kiro.exe
         exePath = path.resolve(resourcesPath, '..', 'Kiro.exe');
     } else if (isMac) {
-        // Resources/../../MacOS/Kiro
         exePath = path.resolve(resourcesPath, '..', '..', 'MacOS', 'Kiro');
     } else {
-        // Linux: usually /usr/bin/kiro or /opt/Kiro/kiro
-        // Try parent dir
         exePath = path.resolve(resourcesPath, '..', 'kiro');
     }
 
@@ -155,13 +150,49 @@ function startKiro(resourcesPath) {
     }
 }
 
+function runServer(enableKiro) {
+    console.log(`\nStarting server${enableKiro ? ' with Kiro support' : ''}...`);
+    rl.close();
+
+    const args = ['--watch', 'src/index.js'];
+    if (enableKiro) {
+        args.push('--enable-kiro');
+    }
+
+    const serverProcess = spawn('node', args, {
+        stdio: 'inherit',
+        shell: true,
+        env: process.env // Inherit env vars
+    });
+
+    serverProcess.on('close', (code) => {
+        process.exit(code);
+    });
+}
+
 async function main() {
+    console.log('\n--- Antigravity Dev Server Runner ---');
+
     try {
-        await killKiro();
-        const resourcesPath = await getKiroPath();
-        await patchExtension(resourcesPath);
-        startKiro(resourcesPath);
-        rl.close();
+        const answer = await question('Enable Kiro Support? [Y/n]: ');
+        const enableKiro = answer.trim().toLowerCase() !== 'n';
+
+        if (enableKiro) {
+            try {
+                await killKiro();
+                const resourcesPath = await getKiroPath();
+                await patchExtension(resourcesPath);
+                startKiro(resourcesPath);
+                runServer(true);
+            } catch (e) {
+                console.error('\nKiro setup failed:', e.message);
+                console.log('Starting server WITHOUT Kiro support due to setup error...');
+                // Wait a moment so user sees error
+                setTimeout(() => runServer(false), 2000);
+            }
+        } else {
+            runServer(false);
+        }
     } catch (e) {
         console.error('Unexpected error:', e);
         rl.close();
