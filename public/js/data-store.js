@@ -381,13 +381,6 @@ document.addEventListener('alpine:init', () => {
             });
 
             return rows;
-        },
-
-        destroy() {
-            this.stopHealthCheck();
-            if (this._visibilityHandler) {
-                document.removeEventListener('visibilitychange', this._visibilityHandler);
-            }
         }
     });
 });

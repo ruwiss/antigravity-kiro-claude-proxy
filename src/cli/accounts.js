@@ -17,7 +17,7 @@ import { createInterface } from 'readline/promises';
 import { stdin, stdout } from 'process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname } from 'path';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import net from 'net';
 import { ACCOUNT_CONFIG_PATH, DEFAULT_PORT, MAX_ACCOUNTS } from '../constants.js';
 import {
@@ -88,21 +88,25 @@ function createRL() {
 function openBrowser(url) {
     const platform = process.platform;
     let command;
+    let args;
 
     if (platform === 'darwin') {
-        command = `open "${url}"`;
+        command = 'open';
+        args = [url];
     } else if (platform === 'win32') {
-        command = `start "" "${url}"`;
+        command = 'cmd';
+        args = ['/c', 'start', '', url];
     } else {
-        command = `xdg-open "${url}"`;
+        command = 'xdg-open';
+        args = [url];
     }
 
-    exec(command, (error) => {
-        if (error) {
-            console.log('\n⚠ Could not open browser automatically.');
-            console.log('Please open this URL manually:', url);
-        }
+    const child = spawn(command, args, { stdio: 'ignore', detached: true });
+    child.on('error', () => {
+        console.log('\n⚠ Could not open browser automatically.');
+        console.log('Please open this URL manually:', url);
     });
+    child.unref();
 }
 
 /**

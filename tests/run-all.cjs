@@ -9,6 +9,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 
 const tests = [
+    { name: 'Account Selection Strategies', file: 'test-strategies.cjs' },
     { name: 'Thinking Signatures', file: 'test-thinking-signatures.cjs' },
     { name: 'Multi-turn Tools (Non-Streaming)', file: 'test-multiturn-thinking-tools.cjs' },
     { name: 'Multi-turn Tools (Streaming)', file: 'test-multiturn-thinking-tools-streaming.cjs' },
