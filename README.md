@@ -4,11 +4,8 @@
 [![npm downloads](https://img.shields.io/npm/dm/antigravity-claude-proxy.svg)](https://www.npmjs.com/package/antigravity-claude-proxy)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<a href="https://buymeacoffee.com/badrinarayanans" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a>
 
 A proxy server that exposes an **Anthropic-compatible API** backed by **Antigravity's Cloud Code**, letting you use Claude and Gemini models with **Claude Code CLI**.
-
-![Antigravity Claude Proxy Banner](images/banner.png)
 
 ## How It Works
 
@@ -241,6 +238,38 @@ function claude-antigravity {
 ```
 
 Then run `claude` for official API or `claude-antigravity` for this proxy.
+
+---
+
+## Using with Kiro IDE
+
+This proxy supports full integration with **Kiro IDE** (AWS CodeWhisperer compatible), allowing you to use Antigravity models directly within the editor.
+
+### Automated Setup
+
+We provide an automated setup script that handles everything for you.
+
+1. **Start the Proxy:**
+   ```bash
+   npm run dev
+   ```
+
+2. **Follow the Prompts:**
+   The script will:
+   - Check for and close any running Kiro instances.
+   - Ask for your Kiro `resources` path (it tries to auto-detect it).
+   - **Patch** the local Kiro extension file to route critical requests (`/ListAvailableModels`, `/generateAssistantResponse`) to `http://localhost:9980`.
+   - Automatically restart Kiro.
+
+3. **Enjoy:** 
+   Open Kiro IDE and start coding. The proxy handles the rest.
+
+### Features
+
+- **Model Selection:** The `/ListAvailableModels` endpoint injects a custom list of models into the IDE (e.g., `gemini-3-pro-high`, `claude-sonnet-4-5-thinking`).
+- **Free Usage:** All models are presented with `rateMultiplier: 0.0`, appearing as free to the IDE.
+- **Vibe Mode Support:** Fully supports "Vibe" mode request routing.
+- **Native Streaming:** Optimized streaming for tool arguments and text responses.
 
 ---
 
