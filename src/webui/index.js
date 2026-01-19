@@ -668,10 +668,11 @@ export function mountWebUI(app, dirname, accountManager) {
                         const accountData = await completeOAuthFlow(code, verifier);
 
                         // Add or update the account
+                        // Note: Don't set projectId here - it will be discovered and stored
+                        // in the refresh token via getProjectForAccount() on first use
                         await addAccount({
                             email: accountData.email,
                             refreshToken: accountData.refreshToken,
-                            projectId: accountData.projectId,
                             source: 'oauth'
                         });
 

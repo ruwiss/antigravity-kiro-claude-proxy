@@ -95,7 +95,7 @@ function openBrowser(url) {
         args = [url];
     } else if (platform === 'win32') {
         command = 'cmd';
-        args = ['/c', 'start', '', url];
+        args = ['/c', 'start', '', url.replace(/&/g, '^&')];
     } else {
         command = 'xdg-open';
         args = [url];
@@ -210,20 +210,18 @@ async function addAccount(existingAccounts) {
         if (existing) {
             console.log(`\n⚠ Account ${result.email} already exists. Updating tokens.`);
             existing.refreshToken = result.refreshToken;
-            existing.projectId = result.projectId;
+            // Note: projectId will be discovered and stored in refresh token on first use
             existing.addedAt = new Date().toISOString();
             return null; // Don't add duplicate
         }
 
         console.log(`\n✓ Successfully authenticated: ${result.email}`);
-        if (result.projectId) {
-            console.log(`  Project ID: ${result.projectId}`);
-        }
+        console.log('  Project will be discovered on first API request.');
 
         return {
             email: result.email,
             refreshToken: result.refreshToken,
-            projectId: result.projectId,
+            // Note: projectId stored in refresh token, not as separate field
             addedAt: new Date().toISOString(),
             modelRateLimits: {}
         };
@@ -267,20 +265,18 @@ async function addAccountNoBrowser(existingAccounts, rl) {
         if (existing) {
             console.log(`\n⚠ Account ${result.email} already exists. Updating tokens.`);
             existing.refreshToken = result.refreshToken;
-            existing.projectId = result.projectId;
+            // Note: projectId will be discovered and stored in refresh token on first use
             existing.addedAt = new Date().toISOString();
             return null; // Don't add duplicate
         }
 
         console.log(`\n✓ Successfully authenticated: ${result.email}`);
-        if (result.projectId) {
-            console.log(`  Project ID: ${result.projectId}`);
-        }
+        console.log('  Project will be discovered on first API request.');
 
         return {
             email: result.email,
             refreshToken: result.refreshToken,
-            projectId: result.projectId,
+            // Note: projectId stored in refresh token, not as separate field
             addedAt: new Date().toISOString(),
             modelRateLimits: {}
         };

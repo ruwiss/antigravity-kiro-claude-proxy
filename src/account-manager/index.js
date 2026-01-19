@@ -297,7 +297,8 @@ export class AccountManager {
      * @returns {Promise<string>} Project ID
      */
     async getProjectForAccount(account, token) {
-        return fetchProject(account, token, this.#projectCache);
+        // Pass onSave callback to persist managedProjectId in refresh token
+        return fetchProject(account, token, this.#projectCache, () => this.saveToDisk());
     }
 
     /**
