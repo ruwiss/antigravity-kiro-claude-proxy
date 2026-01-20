@@ -13,6 +13,7 @@ import {
 } from '../constants.js';
 import { convertAnthropicToGoogle } from '../format/index.js';
 import { deriveSessionId } from './session-manager.js';
+import { buildFingerprintHeaders } from '../fingerprint/index.js';
 
 /**
  * Build the wrapped request body for Cloud Code API
@@ -69,18 +70,21 @@ export function buildCloudCodeRequest(anthropicRequest, projectId) {
  * @param {string} token - OAuth access token
  * @param {string} model - Model name
  * @param {string} accept - Accept header value (default: 'application/json')
+ * @param {Object} fingerprint - Optional device fingerprint object
  * @returns {Object} Headers object
  */
-export function buildHeaders(token, model, accept = 'application/json') {
+export function buildHeaders(token, model, accept = 'application/json', fingerprint = null) {
+    const fingerprintHeaders = fingerprint ? buildFingerprintHeaders(fingerprint) : {};
+
     const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        ...ANTIGRAVITY_HEADERS
+        ...ANTIGRAVITY_HEADERS,
+        ...fingerprintHeaders
     };
 
     const modelFamily = getModelFamily(model);
 
-    // Add interleaved thinking header only for Claude thinking models
     if (modelFamily === 'claude' && isThinkingModel(model)) {
         headers['anthropic-beta'] = 'interleaved-thinking-2025-05-14';
     }

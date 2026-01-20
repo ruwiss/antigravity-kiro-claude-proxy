@@ -26,6 +26,7 @@ import {
 import { createStrategy, getStrategyLabel, DEFAULT_STRATEGY } from './strategies/index.js';
 import { logger } from '../utils/logger.js';
 import { config } from '../config.js';
+import { generateFingerprint } from '../fingerprint/index.js';
 
 export class AccountManager {
     #accounts = [];
@@ -350,12 +351,17 @@ export class AccountManager {
             accounts: this.#accounts.map(a => ({
                 email: a.email,
                 source: a.source,
-                enabled: a.enabled !== false,  // Default to true if undefined
+                enabled: a.enabled !== false,
                 projectId: a.projectId || null,
                 modelRateLimits: a.modelRateLimits || {},
                 isInvalid: a.isInvalid || false,
                 invalidReason: a.invalidReason || null,
-                lastUsed: a.lastUsed
+                lastUsed: a.lastUsed,
+                fingerprint: a.fingerprint ? {
+                    deviceId: a.fingerprint.deviceId,
+                    userAgent: a.fingerprint.userAgent,
+                    createdAt: a.fingerprint.createdAt
+                } : null
             }))
         };
     }
@@ -375,6 +381,35 @@ export class AccountManager {
      */
     getAllAccounts() {
         return this.#accounts;
+    }
+
+    /**
+     * Regenerate device fingerprint for an account
+     * @param {string} email - Email of the account
+     * @returns {Object|null} The new fingerprint or null if account not found
+     */
+    regenerateFingerprint(email) {
+        const account = this.#accounts.find(a => a.email === email);
+        if (!account) {
+            logger.warn(`[AccountManager] Cannot regenerate fingerprint: account ${email} not found`);
+            return null;
+        }
+
+        const newFingerprint = generateFingerprint();
+        account.fingerprint = newFingerprint;
+        this.saveToDisk();
+        logger.info(`[AccountManager] Regenerated fingerprint for ${email}`);
+        return newFingerprint;
+    }
+
+    /**
+     * Get fingerprint for an account
+     * @param {string} email - Email of the account
+     * @returns {Object|null} The fingerprint or null if account not found
+     */
+    getFingerprint(email) {
+        const account = this.#accounts.find(a => a.email === email);
+        return account?.fingerprint || null;
     }
 }
 

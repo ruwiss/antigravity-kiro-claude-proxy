@@ -204,7 +204,7 @@ export async function sendMessage(anthropicRequest, accountManager, fallbackEnab
 
                     const response = await fetch(url, {
                         method: 'POST',
-                        headers: buildHeaders(token, model, isThinking ? 'text/event-stream' : 'application/json'),
+                        headers: buildHeaders(token, model, isThinking ? 'text/event-stream' : 'application/json', account.fingerprint),
                         body: JSON.stringify(payload)
                     });
 

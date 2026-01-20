@@ -200,7 +200,7 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
 
                     const response = await fetch(url, {
                         method: 'POST',
-                        headers: buildHeaders(token, model, 'text/event-stream'),
+                        headers: buildHeaders(token, model, 'text/event-stream', account.fingerprint),
                         body: JSON.stringify(payload)
                     });
 
@@ -318,7 +318,7 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                             // Refetch the response
                             currentResponse = await fetch(url, {
                                 method: 'POST',
-                                headers: buildHeaders(token, model, 'text/event-stream'),
+                                headers: buildHeaders(token, model, 'text/event-stream', account.fingerprint),
                                 body: JSON.stringify(payload)
                             });
 

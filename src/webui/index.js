@@ -255,6 +255,87 @@ export function mountWebUI(app, dirname, accountManager) {
         }
     });
 
+    /**
+     * POST /api/accounts/:email/fingerprint/regenerate - Regenerate device fingerprint for account
+     */
+    app.post('/api/accounts/:email/fingerprint/regenerate', async (req, res) => {
+        try {
+            const { email } = req.params;
+            const newFingerprint = accountManager.regenerateFingerprint(email);
+
+            if (!newFingerprint) {
+                return res.status(404).json({
+                    status: 'error',
+                    error: `Account ${email} not found`
+                });
+            }
+
+            res.json({
+                status: 'ok',
+                message: `Fingerprint regenerated for ${email}`,
+                fingerprint: {
+                    deviceId: newFingerprint.deviceId,
+                    userAgent: newFingerprint.userAgent,
+                    createdAt: newFingerprint.createdAt
+                }
+            });
+        } catch (error) {
+            res.status(500).json({ status: 'error', error: error.message });
+        }
+    });
+
+    /**
+     * GET /api/accounts/:email/fingerprint - Get device fingerprint for account
+     */
+    app.get('/api/accounts/:email/fingerprint', async (req, res) => {
+        try {
+            const { email } = req.params;
+            const fingerprint = accountManager.getFingerprint(email);
+
+            if (!fingerprint) {
+                return res.status(404).json({
+                    status: 'error',
+                    error: `Account ${email} not found or has no fingerprint`
+                });
+            }
+
+            res.json({
+                status: 'ok',
+                fingerprint: fingerprint
+            });
+        } catch (error) {
+            res.status(500).json({ status: 'error', error: error.message });
+        }
+    });
+
+    /**
+     * POST /api/accounts/fingerprints/regenerate-all - Regenerate fingerprints for all accounts
+     */
+    app.post('/api/accounts/fingerprints/regenerate-all', async (req, res) => {
+        try {
+            const accounts = accountManager.getAllAccounts();
+            const results = [];
+
+            for (const account of accounts) {
+                const newFingerprint = accountManager.regenerateFingerprint(account.email);
+                if (newFingerprint) {
+                    results.push({
+                        email: account.email,
+                        deviceId: newFingerprint.deviceId
+                    });
+                }
+            }
+
+            res.json({
+                status: 'ok',
+                message: `Regenerated fingerprints for ${results.length} accounts`,
+                accounts: results
+            });
+        } catch (error) {
+            res.status(500).json({ status: 'error', error: error.message });
+        }
+    });
+
     // ==========================================
     // Configuration API
     // ==========================================

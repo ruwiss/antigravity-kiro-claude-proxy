@@ -10,6 +10,7 @@ import { dirname } from 'path';
 import { ACCOUNT_CONFIG_PATH } from '../constants.js';
 import { getAuthStatus } from '../auth/database.js';
 import { logger } from '../utils/logger.js';
+import { generateFingerprint } from '../fingerprint/index.js';
 
 /**
  * Load accounts from the config file
@@ -24,18 +25,20 @@ export async function loadAccounts(configPath = ACCOUNT_CONFIG_PATH) {
         const configData = await readFile(configPath, 'utf-8');
         const config = JSON.parse(configData);
 
-        const accounts = (config.accounts || []).map(acc => ({
-            ...acc,
-            lastUsed: acc.lastUsed || null,
-            enabled: acc.enabled !== false, // Default to true if not specified
-            // Reset invalid flag on startup - give accounts a fresh chance to refresh
-            isInvalid: false,
-            invalidReason: null,
-            modelRateLimits: acc.modelRateLimits || {},
-            // New fields for subscription and quota tracking
-            subscription: acc.subscription || { tier: 'unknown', projectId: null, detectedAt: null },
-            quota: acc.quota || { models: {}, lastChecked: null }
-        }));
+        const accounts = (config.accounts || []).map(acc => {
+            const hasFingerprint = acc.fingerprint && acc.fingerprint.deviceId;
+            return {
+                ...acc,
+                lastUsed: acc.lastUsed || null,
+                enabled: acc.enabled !== false,
+                isInvalid: false,
+                invalidReason: null,
+                modelRateLimits: acc.modelRateLimits || {},
+                subscription: acc.subscription || { tier: 'unknown', projectId: null, detectedAt: null },
+                quota: acc.quota || { models: {}, lastChecked: null },
+                fingerprint: hasFingerprint ? acc.fingerprint : generateFingerprint()
+            };
+        });
 
         const settings = config.settings || {};
         let activeIndex = config.activeIndex || 0;
@@ -73,7 +76,8 @@ export function loadDefaultAccount(dbPath) {
                 email: authData.email || 'default@antigravity',
                 source: 'database',
                 lastUsed: null,
-                modelRateLimits: {}
+                modelRateLimits: {},
+                fingerprint: generateFingerprint()
             };
 
             const tokenCache = new Map();
@@ -111,7 +115,7 @@ export async function saveAccounts(configPath, accounts, settings, activeIndex) 
             accounts: accounts.map(acc => ({
                 email: acc.email,
                 source: acc.source,
-                enabled: acc.enabled !== false, // Persist enabled state
+                enabled: acc.enabled !== false,
                 dbPath: acc.dbPath || null,
                 refreshToken: acc.source === 'oauth' ? acc.refreshToken : undefined,
                 apiKey: acc.source === 'manual' ? acc.apiKey : undefined,
@@ -121,9 +125,9 @@ export async function saveAccounts(configPath, accounts, settings, activeIndex) 
                 invalidReason: acc.invalidReason || null,
                 modelRateLimits: acc.modelRateLimits || {},
                 lastUsed: acc.lastUsed,
-                // Persist subscription and quota data
                 subscription: acc.subscription || { tier: 'unknown', projectId: null, detectedAt: null },
-                quota: acc.quota || { models: {}, lastChecked: null }
+                quota: acc.quota || { models: {}, lastChecked: null },
+                fingerprint: acc.fingerprint || undefined
             })),
             settings: settings,
             activeIndex: activeIndex
