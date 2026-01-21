@@ -1,17 +1,30 @@
-# Proje Güncelleme Özeti - PR #170
+# Proje Güncelleme Özeti - PR #170 ve #169
 
-Bu döküman, orijinal depodan (upstream) çekilen #170 numaralı Pull Request ile yapılan değişiklikleri özetlemektedir.
+Bu döküman, orijinal depodan (upstream) çekilen #170 ve #169 numaralı Pull Request'ler ile yapılan değişiklikleri özetlemektedir.
 
 ## Yapılan İşlemler
-1.  Orijinal (`badrisnarayanan/antigravity-claude-proxy`) depodaki #170 numaralı PR yerel ortama çekildi.
-2.  `feat/device-fingerprint-binding` adında yeni bir dal (branch) oluşturuldu ve bu dala geçiş yapıldı.
+1.  **PR #170 Çekildi:** Cihaz parmak izi bağlama özelliği eklendi.
+2.  **`ratelimiting` Dalı Oluşturuldu:** Bu özellikler yeni bir dalda toplandı ve `origin`'e push edildi.
+3.  **PR #169 Çekildi ve Birleştirildi:** Yeni konfigürasyon ayarları (`new configs`) `ratelimiting` dalına eklendi.
+4.  **Çakışmalar Giderildi:** `src/constants.js` dosyasındaki çakışmalar başarıyla çözüldü ve tüm yeni stratejiler dahil edildi.
 
 ## Eklenen Özellikler
-*   **Device Fingerprint Binding:** Rate limit'leri (istek sınırlarını) azaltmak için cihaz parmak izi bağlama özelliği eklendi.
-*   **Web UI Güncellemesi:** Parmak izi yönetimi için kullanıcı arayüzüne (UI) yeni bileşenler eklendi.
+
+### 1. Device Fingerprint Binding (#170)
+*   Rate limit'leri (istek sınırlarını) azaltmak için cihaz parmak izi bağlama özelliği.
+*   Web UI üzerinden parmak izi yönetimi desteği.
+
+### 2. Yeni Konfigürasyonlar ve Stratejiler (#169)
+*   **Yeni Hesap Seçim Stratejileri:**
+    *   `silent-failover`: Hataları gizle, sessizce hesap değiştir.
+    *   `on-demand`: İstek anında hesabı etkinleştir, sonra devre dışı bırak.
+    *   `aggressive`: Herhangi bir sorunda anında hesap değiştir.
+    *   `quota-first`: Kotası en yüksek olan hesaba öncelik ver.
+    *   `conservative`: Bir hesap bitene kadar onu kullanmaya devam et.
+*   **Gelişmiş Rate Limit Yönetimi:** İstek sınırlarına karşı daha dirençli yeni ayarlar ve bekleme süreleri eklendi.
 
 ## Mevcut Durum
-Şu anda `feat/device-fingerprint-binding` dalındasınız. Bu daldaki değişiklikleri test edebilir ve isterseniz kendi `main` dalınızla birleştirebilirsiniz (merge).
+Şu anda `ratelimiting` dalındasınız ve bu dal hem parmak izi bağlama hem de yeni konfigürasyon özelliklerini içermektedir.
 
 ---
 *Not: Bu dosya Antigravity tarafından otomatik olarak Türkçe oluşturulmuştur.*
