@@ -250,6 +250,12 @@ window.Components.serverConfig = () => ({
             (v) => window.Validators.validateTimeout(v, MAX_WAIT_MIN, MAX_WAIT_MAX));
     },
 
+    toggleMaxAccounts(value) {
+        const { MAX_ACCOUNTS_MIN, MAX_ACCOUNTS_MAX } = window.AppConstants.VALIDATION;
+        this.saveConfigField('maxAccounts', value, 'Max Accounts',
+            (v) => window.Validators.validateRange(v, MAX_ACCOUNTS_MIN, MAX_ACCOUNTS_MAX, 'Max Accounts'));
+    },
+
     toggleRateLimitDedupWindowMs(value) {
         const { RATE_LIMIT_DEDUP_MIN, RATE_LIMIT_DEDUP_MAX } = window.AppConstants.VALIDATION;
         this.saveConfigField('rateLimitDedupWindowMs', value, 'Rate Limit Dedup Window',
