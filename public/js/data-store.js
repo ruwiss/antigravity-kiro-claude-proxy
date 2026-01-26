@@ -237,6 +237,7 @@ document.addEventListener('alpine:init', () => {
                 let minResetTime = null;
 
                 this.accounts.forEach(acc => {
+                    if (acc.enabled === false) return;
                     if (this.filters.account !== 'all' && acc.email !== this.filters.account) return;
 
                     const limit = acc.limits?.[modelId];
@@ -352,6 +353,7 @@ document.addEventListener('alpine:init', () => {
                 const quotaInfo = [];
                 // Use ALL accounts (no account filter)
                 this.accounts.forEach(acc => {
+                    if (acc.enabled === false) return;
                     const limit = acc.limits?.[modelId];
                     if (!limit) return;
                     const pct = limit.remainingFraction !== null ? Math.round(limit.remainingFraction * 100) : 0;
